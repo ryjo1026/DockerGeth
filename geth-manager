@@ -1,0 +1,36 @@
+# Base image off of ethereum-go image that includes bootnode
+FROM golang:1.10-alpine as builder
+LABEL Description="Runs bootnode and eth-netstats" Vendor="LTH Experience Ethereum" Version="1.0"
+
+# Run installs
+RUN apk update && apk add --no-cache git\
+  nodejs\
+  make\
+  gcc\
+  musl-dev\
+  linux-headers
+
+# Clone geth project and make all so that bootnode tool is availible; copy to bin for short commands
+RUN git clone https://github.com/ethereum/go-ethereum /go-ethereum
+RUN cd /go-ethereum && make all
+RUN mv /go-ethereum/build/bin/* /bin
+
+# Clone eth-netstats project and install dependencies via npm
+RUN git clone https://github.com/cubedro/eth-netstats.git /eth-netstats
+RUN npm install -g grunt-cli
+RUN cd /eth-netstats && npm install && grunt
+
+# Copy over bootstrap script and boot.key so that we get the same bootnode address
+COPY datadirs/bootstrap-manager.sh /
+COPY datadirs/boot.key /
+
+# Start the manager
+CMD ["sh", "/bootstrap-manager.sh"]
+
+# Bootnode port
+EXPOSE 30400:30400
+# Eth-netstats port
+EXPOSE 3000:3000
+
+# Remove entrypoint of parent image
+ENTRYPOINT []

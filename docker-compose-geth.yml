@@ -1,0 +1,44 @@
+version: '3'
+services:
+  # Main manager service
+  geth-manager:
+    hostname: geth-manager
+    deploy:
+      # !! DO NOT CHANGE !!
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    image: localhost:5000/geth-manager
+    ports:
+      - "30400:30400"
+      - "3000:3000"
+    networks:
+      - gethnet
+
+  # Default node service, not in mining mode
+  geth-node:
+    deploy:
+      # Change default scale here
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+    image: localhost:5000/geth-node
+    depends_on:
+      - geth-manager
+    networks:
+      - gethnet
+
+  # Mining node service
+  geth-miner:
+    deploy:
+      # Change default scale here
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+    image: localhost:5000/geth-miner
+    depends_on:
+      - geth-manager
+    networks:
+      - gethnet
+networks:
+  gethnet:

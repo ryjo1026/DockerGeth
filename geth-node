@@ -1,0 +1,29 @@
+# Base image off of ethereum-go default image
+FROM golang:1.10-alpine as builder
+LABEL Description="Runs a non-mining geth ethereum node" Vendor="LTH Experience Ethereum" Version="1.0"
+
+# Run installs (need bind-tools for resolving docker-provided DNS)
+RUN apk update && apk add --no-cache git\
+  make\
+  gcc\
+  musl-dev\
+  linux-headers\
+  bind-tools
+
+# Clone geth project and only make geth; copy to bin for short commands
+RUN git clone https://github.com/ethereum/go-ethereum /go-ethereum
+RUN cd /go-ethereum && make geth
+RUN mv /go-ethereum/build/bin/* /bin
+
+# Copy bootstrap script and genesis file
+COPY datadirs/genesis.json /
+COPY datadirs/bootstrap-node.sh /
+
+# Initialize the data directory
+RUN geth --datadir /datadir/ init /genesis.json
+
+# Start the node
+CMD ["sh", "/bootstrap-node.sh"]
+
+# Remove entrypoint of parent image
+ENTRYPOINT []
